@@ -1,3 +1,21 @@
+---
+paths:
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/generated/**"
+  - "**/__generated__/**"
+  - "**/*.generated.*"
+  - "**/*.gen.*"
+  - "**/*.snap"
+  - "**/*.pb.go"
+  - "**/*_pb2.py"
+  - "**/package-lock.json"
+  - "**/yarn.lock"
+  - "**/pnpm-lock.yaml"
+  - "**/poetry.lock"
+  - "**/Cargo.lock"
+---
+
 # Generated code and build artifacts
 
 Do not manually edit generated files when a source, schema, template, or generator exists.

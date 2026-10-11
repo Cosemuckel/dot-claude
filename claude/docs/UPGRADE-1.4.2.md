@@ -12,3 +12,4 @@
 - Made the orchestrator a strict control plane: its only tool family is allow-listed `Agent(...)` dispatch.
 - Prohibited direct file reads/searches, shell commands, web/MCP access, edits, and testing in the main session.
 - Reworked the structural and runtime contract checks to reject unapproved model IDs and verify the agent-only boundary.
+- Made rules `140-testing.md` and `230-generated-code.md` path-scoped; deduplicated rule `26-investigation-and-audit.md` against the audit-protocol skill and the handoff-protocol skill against rules 20 and 25.

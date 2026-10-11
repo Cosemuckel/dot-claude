@@ -33,27 +33,10 @@ Diagnosis answers: “Why is this behavior failing or occurring?” It should id
 confidence, affected scope, and any important missing evidence. It may recommend a fix, but it does not
 implement the fix unless the user separately requests a change.
 
-## Evidence standard
+## Evidence and reporting
 
-Structural claims should cite exact file/line/function evidence when available. Follow important call chains
-and cross-boundary dependencies instead of inferring behavior from names. Unknowns remain unknowns.
+Structural claims cite exact file/line/function evidence; unknowns remain unknowns. Separate severity from
+confidence. Run a false-positive check before reporting, and deduplicate findings by root cause. State coverage
+gaps: "no findings" means none were established in the reviewed scope.
 
-## Finding quality
-
-Separate severity from confidence. Severity describes impact if the finding is real; confidence describes how
-strongly the evidence establishes the claim. High severity requires a concrete impact mechanism and relevant
-reachability/preconditions.
-
-Every substantive finding should include a location, evidence, impact, verification/reproduction method when
-practical, and a specific remediation recommendation.
-
-Before reporting, perform a false-positive check: look for protections, reachability constraints, contracts,
-configuration, deployment assumptions, or other code that invalidates the candidate.
-
-Deduplicate multiple manifestations of the same root cause. Prefer a smaller set of strong findings over a
-large list of speculative ones.
-
-## Coverage
-
-A report must state what was reviewed and what was not. “No findings” means none were established in the
-reviewed scope; it is not proof that the system is defect-free.
+See the audit-protocol skill for the proof packet and procedure.

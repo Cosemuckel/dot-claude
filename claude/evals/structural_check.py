@@ -53,7 +53,7 @@ EXPECTED_SKILLS = {
     "audit-protocol",
 }
 EXPECTED_PLAYBOOKS = {"feature-development.md", "bug-fix.md", "refactor-review.md", "audit-review.md", "README.md"}
-PATH_SCOPED_RULES = {"170-ui-ux.md", "180-api.md", "190-data.md"}
+PATH_SCOPED_RULES = {"140-testing.md", "170-ui-ux.md", "180-api.md", "190-data.md", "230-generated-code.md"}
 TASK_BUDGETS = {"TRIVIAL": 4, "SMALL": 6, "MODERATE": 12, "COMPLEX": 24}
 TASK_BUDGET_RULE = RULES / "18-task-sizing-and-delegation.md"
 

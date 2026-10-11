@@ -1,3 +1,15 @@
+---
+paths:
+  - "**/*.{test,spec}.*"
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/__tests__/**"
+  - "**/test_*.py"
+  - "**/conftest.py"
+  - "**/*_test.{py,go,rs,rb}"
+  - "**/*{Test,Tests}.{java,kt,cs}"
+---
+
 # Testing quality
 
 Tests should establish meaningful behavior, not merely exercise lines of code.

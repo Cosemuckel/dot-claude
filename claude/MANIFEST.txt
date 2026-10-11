@@ -50,7 +50,7 @@ Substantive rules:
 - Testing and Git hygiene
 - Environment preferences
 - Naming/refactoring/generated-code guidance
-- Path-scoped UI/UX, API, and database rules
+- Path-scoped UI/UX, API, database, testing, and generated-code rules
 
 Playbooks:
 .claude/playbooks/ — thin workflow contracts for recurring feature, bug-fix, refactor, and audit work.
