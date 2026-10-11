@@ -1,0 +1,86 @@
+Claude Orchestration Kit — package manifest
+Package version: 1.4.2
+
+Primary entrypoint: agents/orchestrator.md
+Universal contract: CLAUDE.md
+Topic rules: rules/*.md
+Agents: agents/*.md (orchestrator + stage leads + optional leaf workers)
+Skills: skills/*/SKILL.md
+Release notes: docs/UPGRADE-1.4.0.md + docs/UPGRADE-1.4.1.md + docs/UPGRADE-1.4.2.md + docs/MODEL-AND-CONTEXT.md
+Evaluation: evals/README.md + evals/structural_check.py (static) + evals/runtime_contracts.py (deterministic control-plane suite)
+Settings: settings.json
+MCP: inline-scoped Context7 + major-pinned Playwright; optional Serena documented only
+Plugins: none
+
+Current model policy (1.4.2):
+- Only `claude-sonnet-5-5` and `claude-haiku-5-5` are permitted; all other model IDs and fallback paths are forbidden.
+- The main session, stage leads, and implementation worker use `claude-sonnet-5-5`.
+- Bounded workers and semantic watchdog hooks use `claude-haiku-5-5`.
+- If a pinned model ID is unavailable, stop and report the blocker rather than substituting another model.
+- The main orchestrator has only the approved `Agent(...)` tool family; it cannot read files or use other tools.
+
+Model allocation:
+- `claude-sonnet-5-5`: main orchestrator + stage leads + implementation worker.
+- `claude-haiku-5-5`: micro-reader + focused research/planning/audit/verification workers + semantic watchdog hooks.
+- Model IDs are pinned in settings, agent definitions, and the structural/runtime evaluations.
+
+Run the deterministic package checks:
+python .claude/evals/structural_check.py
+python .claude/evals/runtime_contracts.py
+
+Start the main session:
+claude --model claude-sonnet-5-5 --agent orchestrator
+
+Operating philosophy in 1.4.1 (retained historical architecture):
+- lead-first execution: stage leads can perform their own bounded work;
+- leaf agents remain optional sidecars for isolation, parallel independent work, or fresh verification;
+- the runtime graph and descendant budget are enforced by a deterministic PreToolUse hook;
+- task sizing still prevents disproportionate delegation;
+- prompt/rule text prefers model judgment over redundant procedural micromanagement;
+- context management uses `/clear`, `/compact`, `/rewind`, and subagents deliberately;
+- verification remains independent and evidence-based.
+
+Substantive rules:
+- Communication and clarification
+- Code style and design
+- Architecture and decision quality
+- Reliability/security
+- Documentation
+- Dependencies and performance
+- Testing and Git hygiene
+- Environment preferences
+- Naming/refactoring/generated-code guidance
+- Path-scoped UI/UX, API, and database rules
+
+Playbooks:
+.claude/playbooks/ — thin workflow contracts for recurring feature, bug-fix, refactor, and audit work.
+
+Task proportionality:
+- Four task classes with non-resetting descendant-agent budgets
+- Research/planning gates for trivial and small work
+- Per-Agent-call ORCHESTRATION CONTROL budget ledger
+- Parallel Agent calls allowed only for independent work with no shared-write or ordering dependency
+
+Cost controls:
+- Explicit model, effort, and max-turn settings
+- MCP output ceiling
+- Bash dump-guard hook
+- Task-contract/handoff rules
+- Cost-focused evaluation scenarios
+- Haiku 5.5 used for bounded side work
+
+Audit / diagnosis mode:
+- `AUDIT` is report-only and never authorizes implementation.
+- `DIAGNOSE` identifies root cause and evidence without changing the target.
+- Audit findings separate severity from confidence and require concrete evidence.
+- Important findings receive an explicit false-positive check.
+- Reports state reviewed scope, coverage gaps, assumptions, and unresolved questions.
+
+Hardening in 1.4.1 (retained historical behavior):
+- lead agents can execute their own stage work without mandatory leaf wrappers
+- audit-worker remains capability-level read-only
+- test agents are described as non-editing rather than absolutely non-mutating; Bash may still produce generated artifacts
+- deterministic control-plane contract suite verifies the runtime graph/budget guard
+- untrusted repository/web/MCP content cannot override package policy
+- model/effort policy is pinned to the two approved 5.5 model IDs
+- release/package consistency is checked during evaluation
