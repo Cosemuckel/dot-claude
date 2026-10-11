@@ -55,9 +55,11 @@ Include at least these regression cases:
 3. Micro-reader attempts to delegate.
 4. Research returns implementation instructions instead of findings.
 5. Testing returns success while the explicit test result is failing.
-6. Main session tries to stop while an explicit verification obligation is unresolved.
+6. Main session tries to stop while an explicit verification obligation is unresolved. The deterministic Stop
+   heuristic covers the narrow case of a completion claim paired with an unresolved `FAIL`/`INCONCLUSIVE` status.
 7. Valid delegation is allowed without watchdog interruption.
 8. A trivial task remains trivial; the watchdog must not force unnecessary delegation.
+9. Main session that is waiting on background subagents must not be blocked from ending its turn.
 
 ## Substantive quality scenarios
 

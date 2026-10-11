@@ -11,6 +11,7 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 try:
@@ -57,14 +58,20 @@ def disallowed_for(name: str) -> set[str]:
         return {x.strip() for x in value.split(",") if x.strip()}
     return {str(value).strip()}
 
-def load_guard():
-    path = ROOT / "hooks" / "agent_guard.py"
-    spec = importlib.util.spec_from_file_location("agent_guard", path)
+def load_hook(name: str):
+    path = ROOT / "hooks" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise RuntimeError("could not load agent_guard.py")
+        raise RuntimeError(f"could not load {name}.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+def load_guard():
+    return load_hook("agent_guard")
+
+def hook_ref(hook: dict) -> str:
+    return hook.get("command", "") + " " + " ".join(str(a) for a in hook.get("args", []))
 
 def control(task_class: str, before: int, purpose: str = "bounded verification") -> str:
     after = before - 1
@@ -143,14 +150,63 @@ def check_watchdogs(settings: dict) -> None:
                         errors.append(f"{group} prompt watchdog model drifted from claude-haiku-5-5")
                     if "$ARGUMENTS" not in hook.get("prompt", ""):
                         errors.append(f"{group} prompt watchdog does not inspect $ARGUMENTS")
-    if prompt_count != 4:
-        errors.append(f"expected four semantic prompt watchdogs, got {prompt_count}")
+    if prompt_count != 3:
+        errors.append(f"expected three semantic prompt watchdogs, got {prompt_count}")
     agent_entry = next((e for e in hooks.get("PreToolUse", []) if e.get("matcher") == "Agent"), None)
-    if not agent_entry or not any(h.get("type") == "command" and "agent_guard.py" in h.get("command", "") for h in agent_entry.get("hooks", [])):
+    if not agent_entry or not any(h.get("type") == "command" and "agent_guard.py" in hook_ref(h) for h in agent_entry.get("hooks", [])):
         errors.append("Agent PreToolUse hook lacks deterministic guard")
     session_end = hooks.get("SessionEnd", [])
-    if not any(any(h.get("type") == "command" and "agent_guard.py" in h.get("command", "") for h in e.get("hooks", [])) for e in session_end):
+    if not any(any(h.get("type") == "command" and "agent_guard.py" in hook_ref(h) for h in e.get("hooks", [])) for e in session_end):
         errors.append("SessionEnd cleanup hook is missing")
+    stop_hooks = [h for e in hooks.get("Stop", []) for h in e.get("hooks", [])]
+    if not any(h.get("type") == "command" and "stop_guard.py" in hook_ref(h) for h in stop_hooks):
+        errors.append("Stop group lacks the deterministic stop_guard.py command hook")
+    if any(h.get("type") == "prompt" for h in stop_hooks):
+        errors.append("Stop group must not contain a prompt hook")
+
+
+def check_stop_guard() -> None:
+    stop = load_hook("stop_guard")
+
+    def stop_payload(message, active=False, event="Stop") -> dict:
+        data = {"hook_event_name": event, "stop_hook_active": active}
+        if message is not None:
+            data["last_assistant_message"] = message
+        return data
+
+    allow, _ = stop.evaluate_stop(stop_payload("Still waiting on research-lead running in the background. The fix is complete. Status: FAIL"))
+    if not allow:
+        errors.append("stop guard blocked a message that is waiting on background work")
+    allow, _ = stop.evaluate_stop(stop_payload("The fix is complete. Status: FAIL", active=True))
+    if not allow:
+        errors.append("stop guard blocked despite stop_hook_active (must be one-shot)")
+    allow, _ = stop.evaluate_stop(stop_payload("All checks passed. PASS"))
+    if not allow:
+        errors.append("stop guard blocked a verified completion message")
+    allow, reason = stop.evaluate_stop(stop_payload("The fix is complete. Status: FAIL"))
+    if allow or not reason:
+        errors.append("stop guard failed to block a completion claim with unresolved FAIL")
+    for message in ("", "   ", None):
+        allow, _ = stop.evaluate_stop(stop_payload(message))
+        if not allow:
+            errors.append(f"stop guard blocked an empty or missing message ({message!r})")
+
+    script = ROOT / "hooks" / "stop_guard.py"
+    blocking = json.dumps(stop_payload("The fix is complete. Status: FAIL"))
+    proc = subprocess.run([sys.executable, str(script)], input=blocking, capture_output=True, text=True, timeout=20)
+    try:
+        decision = json.loads(proc.stdout)
+    except ValueError:
+        decision = {}
+    if proc.returncode != 0 or decision.get("decision") != "block" or not decision.get("reason"):
+        errors.append("stop_guard.py did not emit a block decision with exit 0 for a contradictory message")
+    other = json.dumps(stop_payload("The fix is complete. Status: FAIL", event="SubagentStop"))
+    proc = subprocess.run([sys.executable, str(script)], input=other, capture_output=True, text=True, timeout=20)
+    if proc.returncode != 0 or proc.stdout.strip():
+        errors.append("stop_guard.py acted on a non-Stop event")
+    proc = subprocess.run([sys.executable, str(script)], input="not json {{{", capture_output=True, text=True, timeout=20)
+    if proc.returncode != 0 or proc.stdout.strip():
+        errors.append("stop_guard.py must fail open (exit 0, no block) on garbage stdin")
 
 
 def check_runtime_guard() -> None:
@@ -239,6 +295,8 @@ def check_docs() -> None:
         errors.append("docs do not mention 1.4.2")
     if "deterministic" not in docs.lower() or "agent_guard.py" not in docs:
         errors.append("docs do not describe deterministic Agent guard")
+    if "py -3" not in (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8"):
+        errors.append("INSTALL.md does not document the `py -3` hook launcher")
     if "existing `.claude`" not in docs:
         errors.append("install docs do not describe safe handling of an existing .claude tree")
     if "Context7 appears" not in (ROOT / "evals" / "README.md").read_text(encoding="utf-8"):
@@ -255,6 +313,7 @@ def main() -> int:
         ("capability boundaries", check_capability_boundaries),
         ("watchdog wiring", lambda: check_watchdogs(settings)),
         ("deterministic runtime guard", check_runtime_guard),
+        ("deterministic stop guard", check_stop_guard),
         ("budget contract", check_budget_contract),
         ("MCP scope", check_mcp_and_docs),
         ("documentation", check_docs),

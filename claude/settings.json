@@ -19,7 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_guard.py\"",
+            "command": "py",
+            "args": ["-3", "${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_guard.py"],
             "timeout": 5,
             "onFailure": "block"
           },
@@ -63,11 +64,10 @@
       {
         "hooks": [
           {
-            "type": "prompt",
-            "model": "claude-haiku-5-5",
-            "timeout": 15,
-            "continueOnBlock": false,
-            "prompt": "You are a conservative main-session completion watchdog.\nAllow stopping unless there is a clear, evidence-based process violation.\n\nIf `stop_hook_active` is true, avoid repeating the same correction unless new evidence shows the condition remains unresolved.\n\nBlock only for cases such as:\n- claiming completion despite an explicit unresolved test/error result;\n- reporting implementation as complete when implementation clearly has not happened;\n- stopping while an explicitly requested mandatory stage is obviously unfinished;\n- violating the project's verification or report-only audit/diagnosis boundary.\n\nDo not invent missing work, demand extra tests without a concrete reason, reopen settled decisions, or create a new planning cycle after a complete verified result.\n\nIf valid, return {\"ok\":true}.\nIf invalid, return {\"ok\":false,\"reason\":\"one concise corrective instruction\"}\n\nHook input:\n$ARGUMENTS"
+            "type": "command",
+            "command": "py",
+            "args": ["-3", "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop_guard.py"],
+            "timeout": 5
           }
         ]
       }
@@ -77,7 +77,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_guard.py\"",
+            "command": "py",
+            "args": ["-3", "${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_guard.py"],
             "timeout": 5
           }
         ]

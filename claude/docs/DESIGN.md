@@ -82,8 +82,11 @@ It may parallelize independent checks but never edits the implementation.
 ## 9. Watchdog
 
 The package watchdog has two layers. A deterministic `PreToolUse` command hook enforces the parent→child graph, named
-subagent requirement, task-class consistency, and the per-user-prompt descendant budget. Prompt hooks provide the
-semantic proportionality and completion review. The completion hooks are not independent execution of tests.
+subagent requirement, task-class consistency, and the per-user-prompt descendant budget. A deterministic, fail-open
+`Stop` command hook blocks only a final message that claims completion while reporting an unresolved
+`FAIL`/`INCONCLUSIVE` status (allowing stops that wait on background agents, and blocking at most once). Prompt hooks
+provide semantic proportionality review (`PreToolUse` Agent/Bash) and subagent completion review (`SubagentStop`).
+The completion hooks are not independent execution of tests.
 
 ## 10. Cost and context control
 

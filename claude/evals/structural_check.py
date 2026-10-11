@@ -23,6 +23,7 @@ SKILLS = ROOT / "skills"
 RULES = ROOT / "rules"
 PLAYBOOKS = ROOT / "playbooks"
 HOOK = ROOT / "hooks" / "agent_guard.py"
+STOP_HOOK = ROOT / "hooks" / "stop_guard.py"
 errors: list[str] = []
 
 EXPECTED_AGENTS = {
@@ -80,7 +81,7 @@ def load_frontmatter(path: Path, required: bool = True):
 # Required kit structure. Extra host-project files are permitted.
 required = [ROOT / "CLAUDE.md", ROOT / "MANIFEST.txt", ROOT / "VERSION", ROOT / "settings.json",
             ROOT / "evals" / "requirements.txt", AGENTS, SKILLS, RULES, PLAYBOOKS, TASK_BUDGET_RULE,
-            ROOT / "docs" / "UPGRADE-1.4.1.md", ROOT / "docs" / "UPGRADE-1.4.2.md", HOOK]
+            ROOT / "docs" / "UPGRADE-1.4.1.md", ROOT / "docs" / "UPGRADE-1.4.2.md", HOOK, STOP_HOOK]
 for path in required:
     if not path.exists():
         fail(f"missing: {path.relative_to(PROJECT)}")
@@ -89,6 +90,15 @@ if HOOK.exists() and not HOOK.is_file():
     fail(".claude/hooks/agent_guard.py must be a file")
 if HOOK.exists() and not (HOOK.stat().st_mode & 0o111):
     fail(".claude/hooks/agent_guard.py must be executable")
+if STOP_HOOK.exists() and not STOP_HOOK.is_file():
+    fail(".claude/hooks/stop_guard.py must be a file")
+if STOP_HOOK.exists() and not (STOP_HOOK.stat().st_mode & 0o111):
+    fail(".claude/hooks/stop_guard.py must be executable")
+
+
+def hook_ref(hook: dict) -> str:
+    """Command plus exec-form args, so checks work for both shell-string and exec-form hooks."""
+    return hook.get("command", "") + " " + " ".join(str(a) for a in hook.get("args", []))
 
 claude_text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8") if (ROOT / "CLAUDE.md").exists() else ""
 claude_lines = claude_text.splitlines()
@@ -164,8 +174,11 @@ if not agent_entry:
     fail("PreToolUse Agent hook is missing")
 else:
     agent_hooks = agent_entry.get("hooks", [])
-    if not any(h.get("type") == "command" and "agent_guard.py" in h.get("command", "") for h in agent_hooks):
+    if not any(h.get("type") == "command" and "agent_guard.py" in hook_ref(h) for h in agent_hooks):
         fail("PreToolUse Agent must include the deterministic agent_guard.py command hook")
+    agent_guard_hooks = [h for h in agent_hooks if h.get("type") == "command" and "agent_guard.py" in hook_ref(h)]
+    if agent_guard_hooks and not all(h.get("onFailure") == "block" for h in agent_guard_hooks):
+        fail("PreToolUse Agent guard command hook must keep onFailure=block")
     semantic = [h for h in agent_hooks if h.get("type") == "prompt"]
     if len(semantic) != 1:
         fail("PreToolUse Agent must retain exactly one semantic prompt watchdog")
@@ -183,11 +196,29 @@ else:
         fail("PreToolUse Bash semantic watchdog must use continueOnBlock=true")
 
 session_end = hooks.get("SessionEnd", [])
-if not any(any(h.get("type") == "command" and "agent_guard.py" in h.get("command", "") for h in e.get("hooks", [])) for e in session_end):
+if not any(any(h.get("type") == "command" and "agent_guard.py" in hook_ref(h) for h in e.get("hooks", [])) for e in session_end):
     fail("SessionEnd must invoke agent_guard.py to clean per-session state")
 
-if prompt_hook_count != 4:
-    fail(f"expected 4 semantic watchdog prompt hooks, found {prompt_hook_count}")
+stop_hooks = [h for e in hooks.get("Stop", []) if isinstance(e, dict) for h in e.get("hooks", []) if isinstance(h, dict)]
+if not any(h.get("type") == "command" and "stop_guard.py" in hook_ref(h) for h in stop_hooks):
+    fail("Stop must include the deterministic stop_guard.py command hook")
+if any(h.get("type") == "prompt" for h in stop_hooks):
+    fail("Stop must not use a prompt hook; the Stop review is deterministic")
+
+# Windows launcher: every command hook runs through `py -3` (exec form or inline).
+for group_name, entries in hooks.items():
+    for entry in entries if isinstance(entries, list) else []:
+        for hook in entry.get("hooks", []) if isinstance(entry, dict) else []:
+            if not isinstance(hook, dict) or hook.get("type") != "command":
+                continue
+            args = hook.get("args", [])
+            exec_form = hook.get("command") == "py" and isinstance(args, list) and args[:1] == ["-3"]
+            inline_form = str(hook.get("command", "")).startswith("py -3")
+            if not (exec_form or inline_form):
+                fail(f"{group_name}: command hook must use the `py -3` launcher")
+
+if prompt_hook_count != 3:
+    fail(f"expected 3 semantic watchdog prompt hooks, found {prompt_hook_count}")
 
 # Agent integrity. Required inventory is a subset; extra project agents are allowed.
 agent_defs: dict[str, dict] = {}
@@ -462,6 +493,6 @@ print(f"Required agents present: {len(EXPECTED_AGENTS)}; host extras permitted")
 print(f"Required skills present: {len(EXPECTED_SKILLS)}; host extras permitted")
 print(f"Rules: {len(list(RULES.glob('*.md')))} total; required path-scoped rules validated")
 print(f"Required playbooks present: {len(EXPECTED_PLAYBOOKS)-1}; host extras permitted")
-print("Watchdogs: deterministic Agent guard + 4 semantic prompt hooks + SessionEnd cleanup")
+print("Watchdogs: deterministic Agent guard + deterministic Stop guard + 3 semantic prompt hooks + SessionEnd cleanup")
 print("MCP: inline-scoped Context7 + headless/isolated @playwright/mcp@1; host .mcp.json permitted")
 print("Runtime: hard Agent graph/budget guard is tested separately by runtime_contracts.py")

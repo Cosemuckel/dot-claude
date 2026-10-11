@@ -9,6 +9,7 @@ Skills: skills/*/SKILL.md
 Release notes: docs/UPGRADE-1.4.0.md + docs/UPGRADE-1.4.1.md + docs/UPGRADE-1.4.2.md + docs/MODEL-AND-CONTEXT.md
 Evaluation: evals/README.md + evals/structural_check.py (static) + evals/runtime_contracts.py (deterministic control-plane suite)
 Settings: settings.json
+Hooks: hooks/agent_guard.py (deterministic Agent graph/budget gate + SessionEnd cleanup) + hooks/stop_guard.py (deterministic fail-open Stop heuristic); launched with `py -3`
 MCP: inline-scoped Context7 + major-pinned Playwright; optional Serena documented only
 Plugins: none
 

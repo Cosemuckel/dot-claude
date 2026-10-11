@@ -5,8 +5,11 @@ for hard orchestration constraints and a Haiku prompt layer for semantic review.
 
 It observes `PreToolUse` on `Agent` and `Bash`, `SubagentStop`, `Stop`, and `SessionEnd` for guard-state cleanup.
 
-The command layer enforces capability graph, named-child, task-class, and descendant-budget constraints. The prompt
-layer checks proportionality, stage-role discipline, verification/completion claims, and obvious context-dump waste.
+The command layer enforces capability graph, named-child, task-class, and descendant-budget constraints. `Stop` is
+also deterministic (`hooks/stop_guard.py`): it allows stopping when the final message shows work waiting on
+background agents, blocks only a completion claim paired with an unresolved `FAIL`/`INCONCLUSIVE` status, is one-shot
+via `stop_hook_active`, and fails open on any error. The prompt layer covers `PreToolUse` on `Agent` and `Bash`
+(proportionality, obvious context-dump waste) and `SubagentStop` (stage-role discipline, verification/completion claims).
 
 The watchdog does not choose technical solutions and does not require a particular valid implementation strategy.
 

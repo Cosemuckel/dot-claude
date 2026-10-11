@@ -64,13 +64,20 @@ organization settings remain authoritative.
 The package enables a project-scoped orchestration watchdog through `.claude/settings.json`.
 
 No extra process is required. The watchdog is silent when behavior is valid and intervenes only on clear
-process violations. The watchdog has a deterministic command hook for hard Agent graph/budget enforcement plus Haiku prompt hooks for semantic proportionality and completion review.
+process violations. The watchdog has a deterministic command hook for hard Agent graph/budget enforcement, Haiku
+prompt hooks for semantic proportionality (Agent and Bash calls) and subagent completion review, and a deterministic
+Stop hook (`hooks/stop_guard.py`, no model call). The Stop hook is a fail-open heuristic: it blocks only a final message
+that claims completion while also reporting an unresolved `FAIL`/`INCONCLUSIVE` status, allows stopping while the
+message says work is still waiting on background agents, and blocks at most once (it allows when `stop_hook_active` is
+true).
 
-The hooks in `.claude/settings.json` invoke `python3`. On Windows, verify that `python3` resolves to a real
-interpreter and not the Microsoft Store stub, or change the hook command to `python` or `py -3`. The deterministic
-guard hook (`PreToolUse` on `Agent`) sets `"onFailure": "block"`, which requires Claude Code 2.1.295 or later. If the
-interpreter or script is missing or fails, Agent calls are blocked rather than silently running without the budget
-guard. The `SessionEnd` hook cannot block and does not set `onFailure`.
+The hooks in `.claude/settings.json` use the Windows launcher `py -3` in exec form (`"command": "py"`,
+`"args": ["-3", ...]`). This requires Python 3 with `py.exe` installed and a Claude Code version that supports
+exec-form `args`. Portability: `py` is Windows-only. On macOS/Linux, change the three hook entries (Agent guard,
+Stop guard, SessionEnd) to `python3` or `python`. The deterministic guard hook (`PreToolUse` on `Agent`) sets
+`"onFailure": "block"`, which requires Claude Code 2.1.295 or later. If `py` or Python is missing, or the script fails,
+Agent calls are blocked rather than silently running without the budget guard. The `Stop` and `SessionEnd` hooks do
+not set `onFailure` and never block on failure.
 
 The semantic layer is model-based and intentionally conservative. The graph/budget gate is deterministic and should
 be treated as the hard runtime boundary.
