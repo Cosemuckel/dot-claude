@@ -9,7 +9,6 @@
     "deny": [
       "Agent(Explore)",
       "Agent(Plan)",
-      "Agent(claude)",
       "Agent(general-purpose)"
     ]
   },
@@ -21,7 +20,8 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_guard.py\"",
-            "timeout": 5
+            "timeout": 5,
+            "onFailure": "block"
           },
           {
             "type": "prompt",

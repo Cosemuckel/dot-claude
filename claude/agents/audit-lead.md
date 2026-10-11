@@ -4,7 +4,7 @@ description: >-
   Investigation lead for report-only audits and diagnosis. Builds scoped evidence directly when practical,
   coordinates bounded evidence gathering when useful, validates candidate findings, and never modifies the target.
 tools: Read, Grep, Glob, WebSearch, WebFetch, Agent(audit-worker, micro-reader), ToolSearch
-disallowedTools: Agent(Explore), Agent(Plan), Agent(general-purpose), Agent(claude), Edit, Write, Bash
+disallowedTools: Agent(Explore), Agent(Plan), Agent(general-purpose), Edit, Write, Bash
 model: claude-sonnet-5-5
 effort: medium
 maxTurns: 28

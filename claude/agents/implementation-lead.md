@@ -4,7 +4,7 @@ description: >-
   Implementation lead for approved changes. Executes bounded implementation work directly when practical and
   uses focused workers only for cleanly isolated or parallel implementation units.
 tools: Read, Grep, Glob, Edit, Write, Bash, Agent(implementation-worker, micro-reader), ToolSearch
-disallowedTools: Agent(Explore), Agent(Plan), Agent(general-purpose), Agent(claude)
+disallowedTools: Agent(Explore), Agent(Plan), Agent(general-purpose)
 model: claude-sonnet-5-5
 effort: high
 maxTurns: 40

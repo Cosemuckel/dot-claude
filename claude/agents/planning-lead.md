@@ -4,7 +4,7 @@ description: >-
   Planning lead for coding tasks. Produces an implementation-ready direction using repository evidence and
   current references, and delegates only narrow questions that genuinely require another context.
 tools: Read, Grep, Glob, Agent(plan-worker, micro-reader), ToolSearch
-disallowedTools: Agent(Explore), Agent(Plan), Agent(general-purpose), Agent(claude), Edit, Write, Bash
+disallowedTools: Agent(Explore), Agent(Plan), Agent(general-purpose), Edit, Write, Bash
 model: claude-sonnet-5-5
 effort: medium
 maxTurns: 20

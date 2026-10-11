@@ -66,6 +66,12 @@ The package enables a project-scoped orchestration watchdog through `.claude/set
 No extra process is required. The watchdog is silent when behavior is valid and intervenes only on clear
 process violations. The watchdog has a deterministic command hook for hard Agent graph/budget enforcement plus Haiku prompt hooks for semantic proportionality and completion review.
 
+The hooks in `.claude/settings.json` invoke `python3`. On Windows, verify that `python3` resolves to a real
+interpreter and not the Microsoft Store stub, or change the hook command to `python` or `py -3`. The deterministic
+guard hook (`PreToolUse` on `Agent`) sets `"onFailure": "block"`, which requires Claude Code 2.1.295 or later. If the
+interpreter or script is missing or fails, Agent calls are blocked rather than silently running without the budget
+guard. The `SessionEnd` hook cannot block and does not set `onFailure`.
+
 The semantic layer is model-based and intentionally conservative. The graph/budget gate is deterministic and should
 be treated as the hard runtime boundary.
 

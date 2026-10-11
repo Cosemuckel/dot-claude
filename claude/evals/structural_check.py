@@ -123,7 +123,7 @@ if "ENABLE_TOOL_SEARCH" in env:
 if env.get("MAX_MCP_OUTPUT_TOKENS") != "12000":
     fail("MAX_MCP_OUTPUT_TOKENS must be 12000")
 
-expected_denies = {"Agent(Explore)", "Agent(Plan)", "Agent(general-purpose)", "Agent(claude)"}
+expected_denies = {"Agent(Explore)", "Agent(Plan)", "Agent(general-purpose)"}
 actual_denies = set(settings.get("permissions", {}).get("deny", []))
 if not expected_denies.issubset(actual_denies):
     fail("built-in generic agents are not fully denied")

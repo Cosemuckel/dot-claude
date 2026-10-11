@@ -5,7 +5,7 @@ description: >-
   generated/build artifacts as a normal side effect. Verifies implemented work directly using focused checks and uses
   test workers only for isolated verification tasks, parallel independent checks, or fresh context.
 tools: Read, Grep, Glob, Bash, Agent(test-runner, micro-reader), ToolSearch
-disallowedTools: Edit, Write, Agent(Explore), Agent(Plan), Agent(general-purpose), Agent(claude)
+disallowedTools: Edit, Write, Agent(Explore), Agent(Plan), Agent(general-purpose)
 model: claude-sonnet-5-5
 effort: medium
 maxTurns: 28

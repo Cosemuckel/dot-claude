@@ -4,7 +4,7 @@ description: >-
   Research lead for coding tasks. Establishes repository facts and current external evidence, performs the
   bounded research itself when practical, and delegates only isolated or parallel questions to focused workers.
 tools: Read, Grep, Glob, WebSearch, WebFetch, Agent(research-worker, micro-reader), ToolSearch
-disallowedTools: Agent(Explore), Agent(Plan), Agent(general-purpose), Agent(claude), Edit, Write, Bash
+disallowedTools: Agent(Explore), Agent(Plan), Agent(general-purpose), Edit, Write, Bash
 model: claude-sonnet-5-5
 effort: medium
 maxTurns: 24
