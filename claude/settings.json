@@ -1,0 +1,89 @@
+{
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "2",
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "8",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "0",
+    "MAX_MCP_OUTPUT_TOKENS": "12000"
+  },
+  "permissions": {
+    "deny": [
+      "Agent(Explore)",
+      "Agent(Plan)",
+      "Agent(claude)",
+      "Agent(general-purpose)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_guard.py\"",
+            "timeout": 5
+          },
+          {
+            "type": "prompt",
+            "model": "claude-haiku-5-5",
+            "timeout": 15,
+            "continueOnBlock": true,
+            "prompt": "You are the semantic orchestration watchdog. A deterministic command hook has already enforced the parent\u2192child graph, named subagent, task-class consistency, and global descendant budget. Inspect the proposed Agent call only for proportionality and task-contract quality.\n\nCheck:\n- TRIVIAL avoids research, planning, playbooks, and unnecessary fan-out.\n- SMALL uses research/planning only for a named blocking fact and does not create avoidable fan-out.\n- MODERATE/COMPLEX delegation has a concrete context-isolation, independent-work, or fresh-verification reason.\n- Research calls state the uncertainty resolved and downstream decision affected.\n- Parallel calls have no shared-write or ordering dependency.\n- `purpose` is concrete rather than decorative.\n\nDo not re-litigate the deterministic graph or budget gate. Do not block a valid technical strategy merely because another strategy is possible.\nReturn JSON only:\n{\"ok\":true}\nor\n{\"ok\":false,\"reason\":\"one concise corrective instruction\"}\n\nHook input:\n$ARGUMENTS"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "prompt",
+            "model": "claude-haiku-5-5",
+            "timeout": 12,
+            "continueOnBlock": true,
+            "prompt": "You are a cost-control watchdog for Bash commands.\nInspect only the proposed command. Block it only when it is an obvious high-volume context dump whose output is unlikely to be necessary in full.\n\nBlock examples:\n- printing an entire large file when a targeted read/search would answer the question;\n- recursively dumping a repository;\n- unbounded grep/find output for a narrow fact;\n- dumping a huge log or diff into the model.\n\nAllow normal build, test, lint, formatting, and deployment commands even when their output may be large.\nDo not second-guess legitimate commands.\nReturn JSON only:\n{\"ok\":true}\nor\n{\"ok\":false,\"reason\":\"Use a focused command or redirect/filter the output; one concise alternative.\"}\n\nHook input:\n$ARGUMENTS"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "audit-lead|audit-worker|research-lead|planning-lead|implementation-lead|testing-lead|micro-reader|research-worker|plan-worker|implementation-worker|test-runner",
+        "hooks": [
+          {
+            "type": "prompt",
+            "model": "claude-haiku-5-5",
+            "timeout": 15,
+            "continueOnBlock": false,
+            "prompt": "You are a conservative completion-contract watchdog.\nInspect this subagent completion event only for clear process violations.\n\nIf `stop_hook_active` is true, do not repeat a previously satisfied correction unless new evidence shows a violation.\n\nCheck:\n- The agent stayed within its stage role and capability boundary.\n- A leaf worker did not claim to delegate.\n- Research did not implement.\n- Planning did not implement.\n- Audit/diagnosis did not modify the target and reported concrete evidence.\n- Testing did not modify implementation source or tests and returned a real check status.\n- The result does not claim completion without the verification evidence its role requires.\n- The handoff is compact and contains the evidence/metadata needed by the caller.\n\nThis hook is a semantic completion review, not independent execution of tests. Independent testing remains the responsibility of `testing-lead`.\nAllow valid technical choices even when you would choose differently.\nIf valid, return {\"ok\":true}.\nIf invalid, return {\"ok\":false,\"reason\":\"one concise corrective instruction\"}.\n\nHook input:\n$ARGUMENTS"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "model": "claude-haiku-5-5",
+            "timeout": 15,
+            "continueOnBlock": false,
+            "prompt": "You are a conservative main-session completion watchdog.\nAllow stopping unless there is a clear, evidence-based process violation.\n\nIf `stop_hook_active` is true, avoid repeating the same correction unless new evidence shows the condition remains unresolved.\n\nBlock only for cases such as:\n- claiming completion despite an explicit unresolved test/error result;\n- reporting implementation as complete when implementation clearly has not happened;\n- stopping while an explicitly requested mandatory stage is obviously unfinished;\n- violating the project's verification or report-only audit/diagnosis boundary.\n\nDo not invent missing work, demand extra tests without a concrete reason, reopen settled decisions, or create a new planning cycle after a complete verified result.\n\nIf valid, return {\"ok\":true}.\nIf invalid, return {\"ok\":false,\"reason\":\"one concise corrective instruction\"}\n\nHook input:\n$ARGUMENTS"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_guard.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "agent": "orchestrator",
+  "model": "claude-sonnet-5-5"
+}
